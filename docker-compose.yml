@@ -1,0 +1,56 @@
+# docker-compose.yml
+
+services:
+
+  db:
+    image: postgres:16.2-alpine  # ← Рекомендуется alpine для меньшего размера
+    container_name: pomodoro_db
+    restart: always
+    shm_size: 128mb  # ограничение на общую память при использовании docker compose
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+      POSTGRES_DB: pomodoro  # ← Автоматически создаёт БД при первом запуске!
+    volumes:
+      - pgdata:/var/lib/postgresql/data  # ← Именованный том для данных
+      # - ./pg/var/lib/postgresql/data  # Привязка к локальной директории проекта
+      # Опционально: кастомные скрипты инициализации
+      # - ./init-scripts:/docker-entrypoint-initdb.d
+
+  cache:
+    image: redis/redis-stack:latest
+    container_name: pomodoro_cache
+    restart: always
+    ports:
+      - '6379:6379'  # стандартный порт для Redis
+    volumes:
+      - redisdata:/data
+    environment:
+      - REDIS_ARGS=--appendonly yes
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: redisinsight
+    restart: always
+    ports:
+      - '5540:5540'  # ← ПРАВИЛЬНЫЙ ПОРТ для версии 2+
+    depends_on:
+      - cache
+    environment:
+      # 🔑 Правильные переменные для автоподключения:
+      - RI_REDIS_HOST=pomodoro_cache      # ← имя контейнера Redis (не service name!)
+      - RI_REDIS_PORT=6379
+      - RI_REDIS_ALIAS=Pomodoro Cache     # ← красивое имя в интерфейсе
+      - RI_REDIS_USERNAME=default         # ← если используется ACL (как в redis://default@...)
+      # - RI_REDIS_PASSWORD=your_password # ← раскомментируйте, если есть пароль
+      # - RI_REDIS_DB=0                   # ← номер БД, если не 0
+      # Важно: чтобы настройки сохранились после перезапуска:
+    volumes:
+      - redisinsight_data:/data           # ← ОБЯЗАТЕЛЬНО для сохранения подключений
+
+volumes:
+  pgdata:    # ← Объявлен том для PostgreSQL
+  redisdata: # ← Объявлен том для Redis (без дефиса в конце!)
+  redisinsight_data:  # ← Объявлен том для Redis Insight
