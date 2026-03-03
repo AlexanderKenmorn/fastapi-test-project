@@ -20,7 +20,7 @@ router = APIRouter(prefix='/task', tags=['task'])
 )
 async def get_tasks(tasks_repository: Annotated[TaskRepository, Depends(get_tasks_repository)],
                     cache_tasks_repository: Annotated[CacheTaskRepository, Depends(get_cache_tasks_repository)]
-                    ):
+                    ) -> list[TaskSchema]:
     """task/all"""
     # connection = get_db_connection()
     # cursor = connection.cursor()
@@ -34,8 +34,8 @@ async def get_tasks(tasks_repository: Annotated[TaskRepository, Depends(get_task
     # connection.close()
     # return tasks
 
-    # if ta
-
+    if list_task_model := cache_tasks_repository.get_tasks():
+        return list_task_model
 
     list_task_model = tasks_repository.get_tasks()
     list_task_schema = [TaskSchema.model_validate(task_model) for task_model in list_task_model]

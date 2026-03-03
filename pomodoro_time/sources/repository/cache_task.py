@@ -25,6 +25,12 @@ class CacheTaskRepository:
         # Сохраняем структуру напрямую
         self.r.json().set("tasks:list", Path.root_path(), list_task_dict)
 
+
+        with self.r as redis:
+            redis.json().set("tasks:list", Path.root_path(), list_task_dict)
+
+
+
     def add_task(self, task_schema: TaskSchema):
         """Добавить задачу в конец списка"""
         # Получаем текущий список
