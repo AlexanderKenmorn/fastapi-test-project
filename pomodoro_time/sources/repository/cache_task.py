@@ -1,45 +1,50 @@
+"""cache_task.py"""
 
-from redis import Redis
+import logging
 from schema.task import TaskSchema
-from redis.commands.json.path import Path
+from redis.exceptions import ResponseError
+
+logger = logging.getLogger(__name__)
 
 
 class CacheTaskRepository:
     """Репозиторий задач в кэше Redis"""
 
-    def __init__(self, r: Redis):
-        self.r = r
+    def __init__(self, redis_session_maker):
+        self.redis_session_maker = redis_session_maker
 
     def get_tasks(self) -> list[TaskSchema]:
         """Получить список задач из кэша"""
-        list_task_dict = self.r.json().get("tasks:list")
-        if list_task_dict is None:
-            return []
-        list_task_schema = [TaskSchema.model_validate(task_dict) for task_dict in list_task_dict]
-        return list_task_schema
+        try:
+            with self.redis_session_maker() as r:
+                list_task_dict = r.json().get("tasks:list")
+                if list_task_dict is None:
+                    return []
+                list_task_schema = [TaskSchema.model_validate(task_dict) for task_dict in list_task_dict]
+                return list_task_schema
+        except ResponseError as e:
+            logger.error(f"❌ RedisJSON error: {e}")
+            return []  # или raise, в зависимости от стратегии
+        except Exception as e:
+            logger.exception(f"❌ Unexpected error in get_tasks: {e}")
+            raise
 
-    def set_tasks(self, list_task_schema: list[TaskSchema]):
+    def set_tasks(self, list_task_schema: list[TaskSchema], ttl: int = 3600) -> None:
         """Сохранить список задач в кэш"""
-        # Преобразуем схемы в словари
-        list_task_dict = [task_schema.model_dump() for task_schema in list_task_schema]
-        # Сохраняем структуру напрямую
-        self.r.json().set("tasks:list", Path.root_path(), list_task_dict)
+        with self.redis_session_maker() as r:
+            # Преобразуем схемы в словари
+            list_task_dict = [task_schema.model_dump() for task_schema in list_task_schema]
+            # Сохраняем структуру напрямую
+            r.json().set("tasks:list", '$', list_task_dict)
+            r.expire("tasks:list", ttl)  # 🔥 Авто-удаление
 
-
-        with self.r as redis:
-            redis.json().set("tasks:list", Path.root_path(), list_task_dict)
-
-
-
-    def add_task(self, task_schema: TaskSchema):
+    def add_task(self, task_schema: TaskSchema) -> None:
         """Добавить задачу в конец списка"""
-        # Получаем текущий список
-        current = self.r.json().get("tasks:list") or []
-        # Добавляем новую задачу как словарь
-        current.append(task_schema.model_dump())
-        # Сохраняем обновлённый список
-        self.r.json().set("tasks:list", Path.root_path(), current)
+        with self.redis_session_maker() as r:
+            # JSON.ARRAPPEND добавляет элемент в массив без чтения всего документа
+            r.json().arrappend("tasks:list", '$', task_schema.model_dump())
 
-    def clear_tasks(self):
+    def clear_tasks(self) -> None:
         """Очистить кэш задач"""
-        self.r.delete("tasks:list")
+        with self.redis_session_maker() as r:
+            r.delete("tasks:list")

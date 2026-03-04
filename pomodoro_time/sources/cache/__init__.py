@@ -1,5 +1,5 @@
 
 
-from .accessor import get_redis_connection
+from .accessor import redis_session_maker
 
-__all__ = ['get_redis_connection']
+__all__ = ['redis_session_maker']

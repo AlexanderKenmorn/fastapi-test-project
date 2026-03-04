@@ -2,7 +2,7 @@
 
 from repository import TaskRepository, CacheTaskRepository
 from database import session_maker
-from cache import get_redis_connection
+from cache import redis_session_maker
 
 
 def get_tasks_repository() -> TaskRepository:
@@ -12,8 +12,7 @@ def get_tasks_repository() -> TaskRepository:
 
 def get_cache_tasks_repository() -> CacheTaskRepository:
     """получить объект кэша репозитория задач"""
-    redis_connection = get_redis_connection()
-    return CacheTaskRepository(redis_connection)
+    return CacheTaskRepository(redis_session_maker)
 
 
 if __name__ == "__main__":
