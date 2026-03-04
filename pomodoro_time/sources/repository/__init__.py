@@ -1,4 +1,4 @@
 from .task import TaskRepository
-from .cache_task import CacheTaskRepository
+from .cache_task import TaskCache
 
-__all__ = ['TaskRepository', 'CacheTaskRepository']
+__all__ = ['TaskRepository', 'TaskCache']

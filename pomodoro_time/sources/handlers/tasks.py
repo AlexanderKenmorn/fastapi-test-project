@@ -2,12 +2,11 @@
 
 from fastapi import APIRouter, status, HTTPException, Depends
 from typing import Annotated
-from dependecy import get_tasks_repository, get_cache_tasks_repository
-# from fixtures import tasks as fixtures_tasks
-from repository import TaskRepository, CacheTaskRepository
+from dependecy import get_tasks_repository, get_tasks_cache, get_tasks_service
+from repository import TaskRepository, TaskCache
 from schema.task import TaskSchema
 from database import Task
-
+from service.srv_task import TaskService
 
 # tasks = [TaskSchema(**_t) for _t in fixtures_tasks]
 
@@ -18,10 +17,9 @@ router = APIRouter(prefix='/task', tags=['task'])
     '/all',
     response_model=list[TaskSchema]
 )
-async def get_tasks(tasks_repository: Annotated[TaskRepository, Depends(get_tasks_repository)],
-                    cache_tasks_repository: Annotated[CacheTaskRepository, Depends(get_cache_tasks_repository)]
-                    ) -> list[TaskSchema]:
+async def get_tasks(tasks_service: Annotated[TaskService, Depends(get_tasks_service)]) -> list[TaskSchema]:
     """task/all"""
+    return tasks_service.get_tasks()
     # connection = get_db_connection()
     # cursor = connection.cursor()
     # fixtures_tasks = cursor.execute("SELECT * FROM Tasks").fetchall()
@@ -33,14 +31,13 @@ async def get_tasks(tasks_repository: Annotated[TaskRepository, Depends(get_task
     # ) for fixed_task in fixtures_tasks]
     # connection.close()
     # return tasks
-
-    if list_task_model := cache_tasks_repository.get_tasks():
-        return list_task_model
-
-    list_task_model = tasks_repository.get_tasks()
-    list_task_schema = [TaskSchema.model_validate(task_model) for task_model in list_task_model]
-    cache_tasks_repository.set_tasks(list_task_schema)
-    return list_task_model
+    # if list_task_model := cache_tasks_repository.get_tasks():
+    #     return list_task_model
+    #
+    # list_task_model = tasks_repository.get_tasks()
+    # list_task_schema = [TaskSchema.model_validate(task_model) for task_model in list_task_model]
+    # cache_tasks_repository.set_tasks(list_task_schema)
+    # return list_task_model
 
 
 @router.post(

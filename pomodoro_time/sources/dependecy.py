@@ -1,8 +1,10 @@
 """зависимости"""
 
-from repository import TaskRepository, CacheTaskRepository
+from fastapi import Depends
+from repository import TaskRepository, TaskCache
 from database import session_maker
 from cache import redis_session_maker
+from service import TaskService
 
 
 def get_tasks_repository() -> TaskRepository:
@@ -10,10 +12,15 @@ def get_tasks_repository() -> TaskRepository:
     return TaskRepository(session_maker)
 
 
-def get_cache_tasks_repository() -> CacheTaskRepository:
+def get_tasks_cache() -> TaskCache:
     """получить объект кэша репозитория задач"""
-    return CacheTaskRepository(redis_session_maker)
+    return TaskCache(redis_session_maker)
 
+def get_tasks_service(tasks_repository: TaskRepository = Depends(get_tasks_repository),
+    tasks_cache: TaskCache = Depends(get_tasks_cache)) -> TaskService:
+    """получить объект сервис"""
+
+    return TaskService(tasks_repository=tasks_repository, tasks_cache=tasks_cache)
 
 if __name__ == "__main__":
     task_repo = get_tasks_repository()
