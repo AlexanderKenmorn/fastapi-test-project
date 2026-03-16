@@ -21,7 +21,7 @@ if config.config_file_name is not None:
 # sqlite:/// - относительный путь
 from pomodoro_time.sources.settings import Settings
 settings = Settings()
-database_url = f'postgresql+psycopg://postgres:password@localhost:5432/{settings.sql_db_name}'
+database_url = settings.database_url
 
 # Метаданные ваших моделей
 # Для поддержки автогенерации необходимо указать переменную target_metadata с метаданными ваших таблиц.

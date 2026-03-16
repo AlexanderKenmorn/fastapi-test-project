@@ -10,7 +10,7 @@ router = APIRouter(prefix='/ping', tags=['ping'])
 async def ping_db():
     """ping/db"""
     _settings = Settings()
-    return {'massage': _settings.sql_db_name}
+    return {'massage': _settings.DB_NAME}
 
 @router.get('/add')
 async def ping_add():
