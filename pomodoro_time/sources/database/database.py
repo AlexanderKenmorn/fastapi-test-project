@@ -6,9 +6,9 @@ from pomodoro_time.sources.settings import Settings
 
 settings = Settings()
 
-engine = create_engine(f'postgresql+psycopg://postgres:password@localhost:5432/{settings.sql_db_name}',
+engine = create_engine(url=settings.database_url,
                        connect_args={
-                           "connect_timeout": 10,  # Таймаут подключения (сек)
+                           "connect_timeout": 10,  # тайм-аут подключения (сек)
                            "options": "-c statement_timeout=30000"  # Таймаут запроса (мс)
                        })
 
